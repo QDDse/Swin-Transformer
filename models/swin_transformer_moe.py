@@ -731,6 +731,7 @@ class SwinTransformerMoE(nn.Module):
         self.init_std = init_std
         self.aux_loss_weight = aux_loss_weight
         self.num_local_experts = num_local_experts
+        ## 每层layer的expert—num
         self.global_experts = num_local_experts * dist.get_world_size() if num_local_experts > 0 \
             else dist.get_world_size() // (-num_local_experts)
         self.sharded_count = (1.0 / num_local_experts) if num_local_experts > 0 else (-num_local_experts)
