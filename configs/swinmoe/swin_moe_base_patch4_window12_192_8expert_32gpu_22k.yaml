@@ -3,8 +3,8 @@ DATA:
   IMG_SIZE: 192
 MODEL:
   TYPE: swin_moe
-  NAME: swin_moe_base_patch4_window12_192_8expert_32gpu_22k
-  DROP_PATH_RATE: 0.3
+  NAME: swin_moe_base_patch4_window12_192_8expert_32gpu_22k  # 8 experts
+  DROP_PATH_RATE: 0.3 
   SWIN_MOE:
     EMBED_DIM: 128
     DEPTHS: [ 2, 2, 18, 2 ]
@@ -13,7 +13,7 @@ MODEL:
     MLP_FC2_BIAS: False
     INIT_STD: 0.005
     MOE_BLOCKS: [ [ -1 ], [ -1 ], [ 1, 3, 5, 7, 9, 11, 13, 15, 17 ], [ 1 ] ]
-    NUM_LOCAL_EXPERTS: -4
+    NUM_LOCAL_EXPERTS: -4 ## gpus per expert
     TOP_VALUE: 1
     CAPACITY_FACTOR: 1.25
     IS_GSHARD_LOSS: False

@@ -68,6 +68,7 @@ class MoEMlp(nn.Module):
         if cosine_router:
             _gate_type['proj_dim'] = cosine_router_dim
             _gate_type['init_t'] = cosine_router_init_t
+        ## tutel moe
         self._moe_layer = tutel_moe.moe_layer(
             gate_type=_gate_type,
             model_dim=in_features,
@@ -271,6 +272,8 @@ class SwinTransformerBlock(nn.Module):
         drop_path (float, optional): Stochastic depth rate. Default: 0.0
         act_layer (nn.Module, optional): Activation layer. Default: nn.GELU
         norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
+
+        ！！ 在此以后都是Swin_MoE的modified contents
         mlp_fc2_bias (bool): Whether to add bias in fc2 of Mlp. Default: True
         init_std: Initialization std. Default: 0.02
         pretrained_window_size (int): Window size in pre-training.
@@ -288,7 +291,7 @@ class SwinTransformerBlock(nn.Module):
         cosine_router_init_t (float): Initialization temperature in cosine router.
         moe_drop (float): Dropout rate in MoE. Default: 0.0
     """
-
+    ## mlp_ratio 默认 4
     def __init__(self, dim, input_resolution, num_heads, window_size=7, shift_size=0,
                  mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0.,
                  act_layer=nn.GELU, norm_layer=nn.LayerNorm, mlp_fc2_bias=True, init_std=0.02, pretrained_window_size=0,
@@ -302,6 +305,7 @@ class SwinTransformerBlock(nn.Module):
         self.window_size = window_size
         self.shift_size = shift_size
         self.mlp_ratio = mlp_ratio
+        ## MoE
         self.is_moe = is_moe
         self.capacity_factor = capacity_factor
         self.top_value = top_value
@@ -320,8 +324,11 @@ class SwinTransformerBlock(nn.Module):
 
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
-        mlp_hidden_dim = int(dim * mlp_ratio)
+        mlp_hidden_dim = int(dim * mlp_ratio) ## hiddensize = dim(inpiut) * mlp_ratio
+
+        ## 只是对MLP扩展为MoE_MLP
         if self.is_moe:
+            ## Tutel_moe
             self.mlp = MoEMlp(in_features=dim,
                               hidden_features=mlp_hidden_dim,
                               num_local_experts=num_local_experts,
@@ -329,7 +336,7 @@ class SwinTransformerBlock(nn.Module):
                               capacity_factor=capacity_factor,
                               cosine_router=cosine_router,
                               normalize_gate=normalize_gate,
-                              use_bpr=use_bpr,
+                              use_bpr=use_bpr,  # Batch Priority Routing
                               is_gshard_loss=is_gshard_loss,
                               gate_noise=gate_noise,
                               cosine_router_dim=cosine_router_dim,
@@ -340,7 +347,8 @@ class SwinTransformerBlock(nn.Module):
         else:
             self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop,
                            mlp_fc2_bias=mlp_fc2_bias)
-
+        ## \
+         
         if self.shift_size > 0:
             # calculate attention mask for SW-MSA
             H, W = self.input_resolution
@@ -403,6 +411,8 @@ class SwinTransformerBlock(nn.Module):
         # FFN
         shortcut = x
         x = self.norm2(x)
+        
+        ## FFN_MoE
         if self.is_moe:
             x, l_aux = self.mlp(x)
             x = shortcut + self.drop_path(x)
@@ -432,8 +442,11 @@ class SwinTransformerBlock(nn.Module):
         flops += self.dim * H * W
         return flops
 
-
+## Got
 class PatchMerging(nn.Module):
+    '''
+    本身PatchMerging 就是一种downsample
+    '''
     r""" Patch Merging Layer.
 
     Args:
@@ -459,7 +472,11 @@ class PatchMerging(nn.Module):
         assert H % 2 == 0 and W % 2 == 0, f"x size ({H}*{W}) are not even."
 
         x = x.view(B, H, W, C)
-
+        ##  0 2 | 0 2
+        ##  1 3 | 1 3
+        ##  ————| ————
+        ##  0 2 | 0 2 
+        ##  1 3 | 1 3
         x0 = x[:, 0::2, 0::2, :]  # B H/2 W/2 C
         x1 = x[:, 1::2, 0::2, :]  # B H/2 W/2 C
         x2 = x[:, 0::2, 1::2, :]  # B H/2 W/2 C
@@ -483,6 +500,9 @@ class PatchMerging(nn.Module):
 
 
 class BasicLayer(nn.Module):
+    '''
+    每个BasicLayer（stage）包含多个Swin-TransformerBlock
+    '''
     """ A basic Swin Transformer layer for one stage.
 
     Args:
@@ -536,7 +556,7 @@ class BasicLayer(nn.Module):
         self.blocks = nn.ModuleList([
             SwinTransformerBlock(dim=dim, input_resolution=input_resolution,
                                  num_heads=num_heads, window_size=window_size,
-                                 shift_size=0 if (i % 2 == 0) else window_size // 2,
+                                 shift_size=0 if (i % 2 == 0) else window_size // 2,   ##
                                  mlp_ratio=mlp_ratio,
                                  qkv_bias=qkv_bias, qk_scale=qk_scale,
                                  drop=drop, attn_drop=attn_drop,
@@ -595,7 +615,7 @@ class BasicLayer(nn.Module):
             flops += self.downsample.flops()
         return flops
 
-
+## images --> patch(tokens)
 class PatchEmbed(nn.Module):
     r""" Image to Patch Embedding
 
@@ -631,9 +651,11 @@ class PatchEmbed(nn.Module):
         # FIXME look at relaxing size constraints
         assert H == self.img_size[0] and W == self.img_size[1], \
             f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
-        x = self.proj(x).flatten(2).transpose(1, 2)  # B Ph*Pw C
+        ## self.proj --> (B, 96, 56, 56)
+        x = self.proj(x).flatten(2).transpose(1, 2)  # B Ph*Pw C (B, 3136, 96)
         if self.norm is not None:
             x = self.norm(x)
+        ## output: [B, img_size^2 / patch_size^2, embed_size]
         return x
 
     def flops(self):
@@ -734,7 +756,9 @@ class SwinTransformerMoE(nn.Module):
         # build layers
         self.layers = nn.ModuleList()
         for i_layer in range(self.num_layers):
-            layer = BasicLayer(dim=int(embed_dim * 2 ** i_layer),
+            
+            ## BasiceLayer 
+            layer = BasicLayer(dim=int(embed_dim * 2 ** i_layer),  ## 此处是input_size
                                input_resolution=(patches_resolution[0] // (2 ** i_layer),
                                                  patches_resolution[1] // (2 ** i_layer)),
                                depth=depths[i_layer],
@@ -797,18 +821,20 @@ class SwinTransformerMoE(nn.Module):
             x = x + self.absolute_pos_embed
         x = self.pos_drop(x)
         l_aux = 0.0
+        ## layers
         for layer in self.layers:
             x, cur_l_aux = layer(x)
             l_aux = cur_l_aux + l_aux
 
         x = self.norm(x)  # B L C
         x = self.avgpool(x.transpose(1, 2))  # B C 1
-        x = torch.flatten(x, 1)
+        x = torch.flatten(x, 1)  ## B C
         return x, l_aux
 
     def forward(self, x):
         x, l_aux = self.forward_features(x)
-        x = self.head(x)
+        x = self.head(x)  # B NUM_Features
+        ## 输出class-logits 和 辅助损失
         return x, l_aux * self.aux_loss_weight
 
     def add_param_to_skip_allreduce(self, param_name):

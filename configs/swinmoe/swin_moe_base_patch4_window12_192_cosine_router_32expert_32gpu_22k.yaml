@@ -16,7 +16,7 @@ MODEL:
     NUM_LOCAL_EXPERTS: 1
     TOP_VALUE: 1
     CAPACITY_FACTOR: 1.25
-    COSINE_ROUTER: True
+    COSINE_ROUTER: True  # use Cosine_Router
     IS_GSHARD_LOSS: False
     MOE_DROP: 0.1
     AUX_LOSS_WEIGHT: 0.01

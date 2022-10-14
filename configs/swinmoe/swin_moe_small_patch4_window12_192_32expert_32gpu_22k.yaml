@@ -3,12 +3,12 @@ DATA:
   IMG_SIZE: 192
 MODEL:
   TYPE: swin_moe
-  NAME: swin_moe_small_patch4_window12_192_32expert_32gpu_22k
+  NAME: swin_moe_small_patch4_window12_192_32expert_32gpu_22k  # small
   DROP_PATH_RATE: 0.2
   SWIN_MOE:
-    EMBED_DIM: 96
-    DEPTHS: [ 2, 2, 18, 2 ]
-    NUM_HEADS: [ 3, 6, 12, 24 ]
+    EMBED_DIM: 96  # 128-->96
+    DEPTHS: [ 2, 2, 18, 2 ]      # basic layer and block 不变
+    NUM_HEADS: [ 3, 6, 12, 24 ]  # head shrink
     WINDOW_SIZE: 12
     MLP_FC2_BIAS: False
     INIT_STD: 0.005
