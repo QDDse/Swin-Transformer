@@ -291,7 +291,7 @@ def validate(config, data_loader, model):
     logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
     return acc1_meter.avg, acc5_meter.avg, loss_cls_meter.avg
 
-
+## 计算吞吐量
 @torch.no_grad()
 def throughput(data_loader, model, logger):
     model.eval()

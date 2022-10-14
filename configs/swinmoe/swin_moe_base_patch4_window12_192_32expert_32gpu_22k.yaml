@@ -4,16 +4,18 @@ DATA:
 MODEL:
   TYPE: swin_moe
   NAME: swin_moe_base_patch4_window12_192_32expert_32gpu_22k
-  DROP_PATH_RATE: 0.3
+  DROP_PATH_RATE: 0.3  
   SWIN_MOE:
-    EMBED_DIM: 128
-    DEPTHS: [ 2, 2, 18, 2 ]
+    EMBED_DIM: 128  ## PatchEmbed ([192,192,3]-->[48,48,128] --> [2304,128])
+    DEPTHS: [ 2, 2, 18, 2 ]  ## swin_blocks:4, 
     NUM_HEADS: [ 4, 8, 16, 32 ]
     WINDOW_SIZE: 12
     MLP_FC2_BIAS: False
     INIT_STD: 0.005
-    MOE_BLOCKS: [ [ -1 ], [ -1 ], [ 1, 3, 5, 7, 9, 11, 13, 15, 17 ], [ 1 ] ]
-    NUM_LOCAL_EXPERTS: 1
+    ## moe index of each Basic layer
+    MOE_BLOCKS: [ [ -1 ], [ -1 ], [ 1, 3, 5, 7, 9, 11, 13, 15, 17 ], [ 1 ] ] 
+    NUM_LOCAL_EXPERTS: 1  ## 每个gpu上的local expert num (默认为1)
+    ## NUM_LOCAL_EXPERTS * node * gpus_num_per_node: 用到的device数量乘以每个gpu上的expert num
     TOP_VALUE: 1
     CAPACITY_FACTOR: 1.25
     IS_GSHARD_LOSS: False
