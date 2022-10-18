@@ -147,20 +147,23 @@ def main(config):
 
     if config.MODEL.RESUME:
         max_accuracy = load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, loss_scaler, logger)
-        acc1, acc5, loss = validate(config, data_loader_val, model)
+        # acc1, acc5, loss = validate(config, data_loader_val, model)
+        acc1, acc5, loss = validate(config, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         if config.EVAL_MODE:
             return
 
     if config.MODEL.PRETRAINED and (not config.MODEL.RESUME):
         load_pretrained(config, model_without_ddp, logger)
-        acc1, acc5, loss = validate(config, data_loader_val, model)
+        # acc1, acc5, loss = validate(config, data_loader_val, model)
+        acc1, acc5, loss = validate(config, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         if config.EVAL_MODE:
             return
 
     if config.THROUGHPUT_MODE:
-        throughput(data_loader_val, model, logger)
+        # throughput(data_loader_val, model, logger)
+        throughput(model, logger)
         return
 
     logger.info("Start training")
@@ -310,6 +313,27 @@ def throughput(data_loader, model, logger):
     model.eval()
 
     for idx, (images, _) in enumerate(data_loader):
+        images = images.cuda(non_blocking=True)
+        batch_size = images.shape[0]
+        for i in range(50):
+            model(images)
+        torch.cuda.synchronize()
+        logger.info(f"throughput averaged with 30 times")
+        tic1 = time.time()
+        for i in range(30):
+            model(images)
+        torch.cuda.synchronize()
+        tic2 = time.time()
+        logger.info(f"batch_size {batch_size} throughput {30 * batch_size / (tic2 - tic1)}")
+        return
+    
+## Throughout_fake
+@torch.no_grad()
+def throughput(model, logger):
+    model.eval()
+
+    for idx in len(1000):
+        images = torch.randn(config.DATA.BATCH_SIZE, 3,192,192)
         images = images.cuda(non_blocking=True)
         batch_size = images.shape[0]
         for i in range(50):
