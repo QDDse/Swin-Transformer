@@ -149,7 +149,8 @@ def main(config):
         max_accuracy = load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, loss_scaler, logger)
         # acc1, acc5, loss = validate(config, data_loader_val, model)
         acc1, acc5, loss = validate_fake(config, model)
-        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        # logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        logger.info(f"Accuracy of the network on the {100 * 4} test images: {acc1:.1f}%")
         if config.EVAL_MODE:
             return
 
