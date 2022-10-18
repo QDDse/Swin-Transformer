@@ -158,7 +158,8 @@ def main(config):
         load_pretrained(config, model_without_ddp, logger)
         # acc1, acc5, loss = validate(config, data_loader_val, model)
         acc1, acc5, loss = validate_fake(config, model)
-        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        # logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        logger.info(f"Accuracy of the network on the {4*100} test images: {acc1:.1f}%")
         if config.EVAL_MODE:
             return
 
@@ -182,7 +183,8 @@ def main(config):
 
         # acc1, acc5, loss = validate(config, data_loader_va, model)
         acc1, acc5, loss = validate_fake(config, model)
-        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        # logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        logger.info(f"Accuracy of the network on the {4*100} test images: {acc1:.1f}%")
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
     save_checkpoint(config, 'final', model_without_ddp, max_accuracy, optimizer, lr_scheduler, loss_scaler,
