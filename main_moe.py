@@ -462,7 +462,8 @@ def validate_fake(config, model):
         if idx % config.PRINT_FREQ == 0:
             memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
             logger.info(
-                f'Test: [{idx}/{len(data_loader)}]\t'
+                # f'Test: [{idx}/{len(data_loader)}]\t'
+                f'Test: [{idx}/{100}]\t'
                 f'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                 f'Loss-Cls {loss_cls_meter.val:.4f} ({loss_cls_meter.avg:.4f})\t'
                 f'Loss-Aux {loss_aux_meter.val:.4f} ({loss_aux_meter.avg:.4f})\t'
