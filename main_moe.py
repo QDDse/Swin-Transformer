@@ -330,7 +330,7 @@ def train_one_epoch_fake(config, model, criterion, optimizer, epoch, mixup_fn, l
     model.train()
     optimizer.zero_grad()
 
-    num_steps = len(data_loader)
+    num_steps = 1000
     batch_time = AverageMeter()
     loss_meter = AverageMeter()
     loss_aux_meter = AverageMeter()
