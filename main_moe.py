@@ -341,8 +341,8 @@ def train_one_epoch_fake(config, model, criterion, optimizer, epoch, mixup_fn, l
     start = time.time()
     end = time.time()
     for idx in range(1000):
-        samples = torch.randn(config.batch-size, 3,192,192)
-        targets = torch.ones(config.batch-size)
+        samples = torch.randn(config.DATA.BATCH_SIZE, 3,192,192)
+        targets = torch.ones(config.DATA.BATCH_SIZE)
         samples = samples.cuda(non_blocking=True)
         targets = targets.cuda(non_blocking=True)
 
