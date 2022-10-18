@@ -435,7 +435,7 @@ def validate_fake(config, model):
     for idx in range(100):
         images = torch.randn(4, 3,192,192)
         target = torch.ones(4)
-        
+        target = target.type(torch.LongTensor)  # convert to Longint64
         images = images.cuda(non_blocking=True)
         target = target.cuda(non_blocking=True)
 
