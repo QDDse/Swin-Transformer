@@ -147,7 +147,7 @@ _C.MODEL.SIMMIM.NORM_TARGET.PATCH_SIZE = 47
 _C.TRAIN = CN()
 _C.TRAIN.START_EPOCH = 0
 _C.TRAIN.EPOCHS = 300
-_C.TRAIN.WARMUP_EPOCHS = 20
+_C.TRAIN.WARMUP_EPOCHS = 20  
 _C.TRAIN.WEIGHT_DECAY = 0.05
 _C.TRAIN.BASE_LR = 5e-4
 _C.TRAIN.WARMUP_LR = 5e-7
@@ -162,6 +162,9 @@ _C.TRAIN.ACCUMULATION_STEPS = 1
 # Whether to use gradient checkpointing to save memory
 # could be overwritten by command line argument
 _C.TRAIN.USE_CHECKPOINT = False
+## fake data 
+_C.TRAIN.STEPS_T = 100  # train_steps
+_C.TRAIN.STEPS_V = 10   # val_steps
 
 # LR scheduler
 _C.TRAIN.LR_SCHEDULER = CN()

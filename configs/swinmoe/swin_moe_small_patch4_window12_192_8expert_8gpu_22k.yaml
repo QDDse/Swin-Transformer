@@ -3,7 +3,7 @@ DATA:
   IMG_SIZE: 192
 MODEL:
   TYPE: swin_moe
-  NAME: swin_moe_small_patch4_window12_192_8expert_32gpu_22k
+  NAME: swin_moe_small_patch4_window12_192_8expert_8gpu_22k
   DROP_PATH_RATE: 0.2
   SWIN_MOE:
     EMBED_DIM: 96
@@ -21,11 +21,13 @@ MODEL:
     AUX_LOSS_WEIGHT: 0.01
 TRAIN:
   EPOCHS: 10
-  WARMUP_EPOCHS: 10
+  WARMUP_EPOCHS: 2  # 10 
   WEIGHT_DECAY: 0.1
   BASE_LR: 1.25e-4 # 4096 batch-size
   WARMUP_LR: 1.25e-7
   MIN_LR: 1.25e-6
   CLIP_GRAD: 3.0
+  STEPS_T: 100  # train_steps per epoch
+  STEPS_V: 10   # val_steps per epoch
 TEST:
   SHUFFLE: True

@@ -118,10 +118,10 @@ def main(config):
 
     if config.TRAIN.ACCUMULATION_STEPS > 1:
         # lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train) // config.TRAIN.ACCUMULATION_STEPS)
-        lr_scheduler = build_scheduler(config, optimizer, 1000 // config.TRAIN.ACCUMULATION_STEPS)
+        lr_scheduler = build_scheduler(config, optimizer, config.TRAIN.STEPS_T // config.TRAIN.ACCUMULATION_STEPS)
     else:
         # lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train))
-        lr_scheduler = build_scheduler(config, optimizer, 1000)
+        lr_scheduler = build_scheduler(config, optimizer, config.TRAIN.STEPS_T)
 
     if config.AUG.MIXUP > 0.:
         # smoothing is handled with mixup label transform
@@ -150,7 +150,7 @@ def main(config):
         # acc1, acc5, loss = validate(config, data_loader_val, model)
         acc1, acc5, loss = validate_fake(config, model)
         # logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
-        logger.info(f"Accuracy of the network on the {100 * 4} test images: {acc1:.1f}%")
+        logger.info(f"Accuracy of the network on the {config.TRAIN.STEPS_V * 4} test images: {acc1:.1f}%")
         if config.EVAL_MODE:
             return
 
@@ -159,7 +159,7 @@ def main(config):
         # acc1, acc5, loss = validate(config, data_loader_val, model)
         acc1, acc5, loss = validate_fake(config, model)
         # logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
-        logger.info(f"Accuracy of the network on the {100*4} test images: {acc1:.1f}%")
+        logger.info(f"Accuracy of the network on the {config.TRAIN.STEPS_V*4} test images: {acc1:.1f}%")
         if config.EVAL_MODE:
             return
 
@@ -184,7 +184,7 @@ def main(config):
         # acc1, acc5, loss = validate(config, data_loader_va, model)
         acc1, acc5, loss = validate_fake(config, model)
         # logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
-        logger.info(f"Accuracy of the network on the {4*100} test images: {acc1:.1f}%")
+        logger.info(f"Accuracy of the network on the {4*config.TRAIN.STEPS_V} test images: {acc1:.1f}%")
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
     save_checkpoint(config, 'final', model_without_ddp, max_accuracy, optimizer, lr_scheduler, loss_scaler,
@@ -331,11 +331,12 @@ def throughput(data_loader, model, logger):
         return
     
 ## Throughout_fake
+### train_step: config.TRAIN.STEPS_V
 @torch.no_grad()
 def throughput_fake(model, logger):
     model.eval()
 
-    for idx in len(1000):
+    for idx in len(config.TRAIN.STEPS_V):
         images = torch.randn(config.DATA.BATCH_SIZE, 3,192,192)
         images = images.cuda(non_blocking=True)
         batch_size = images.shape[0]
@@ -353,11 +354,12 @@ def throughput_fake(model, logger):
 
     
 ## fake data
+### train_steps: config.TRAIN.STEPS_T
 def train_one_epoch_fake(config, model, criterion, optimizer, epoch, mixup_fn, lr_scheduler, loss_scaler):
     model.train()
     optimizer.zero_grad()
 
-    num_steps = 1000
+    num_steps = config.TRAIN.STEPS_T
     batch_time = AverageMeter()
     loss_meter = AverageMeter()
     loss_aux_meter = AverageMeter()
@@ -367,7 +369,7 @@ def train_one_epoch_fake(config, model, criterion, optimizer, epoch, mixup_fn, l
 
     start = time.time()
     end = time.time()
-    for idx in range(1000):
+    for idx in range(num_steps):
         samples = torch.randn(config.DATA.BATCH_SIZE, 3,192,192)
         targets = torch.ones(config.DATA.BATCH_SIZE)
         samples = samples.cuda(non_blocking=True)
@@ -422,6 +424,7 @@ def train_one_epoch_fake(config, model, criterion, optimizer, epoch, mixup_fn, l
     logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
 
 ## fake validate
+### val_steps: config.TRAIN.STEPS_V
 @torch.no_grad()
 def validate_fake(config, model):
     criterion = torch.nn.CrossEntropyLoss()
@@ -435,7 +438,7 @@ def validate_fake(config, model):
 
     end = time.time()
     ## Fake data for test
-    for idx in range(100):
+    for idx in range(config.TRAIN.STEPS_V):
         images = torch.randn(4, 3,192,192)
         target = torch.ones(4)
         target = target.type(torch.LongTensor)  # convert to Longint64
@@ -466,7 +469,7 @@ def validate_fake(config, model):
             memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
             logger.info(
                 # f'Test: [{idx}/{len(data_loader)}]\t'
-                f'Test: [{idx}/{100}]\t'
+                f'Test: [{idx}/{config.TRAIN.STEPS_V}]\t'
                 f'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                 f'Loss-Cls {loss_cls_meter.val:.4f} ({loss_cls_meter.avg:.4f})\t'
                 f'Loss-Aux {loss_aux_meter.val:.4f} ({loss_aux_meter.avg:.4f})\t'
