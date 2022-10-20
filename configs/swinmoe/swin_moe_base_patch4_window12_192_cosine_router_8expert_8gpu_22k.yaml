@@ -3,7 +3,7 @@ DATA:
   IMG_SIZE: 192
 MODEL:
   TYPE: swin_moe
-  NAME: swin_moe_base_patch4_window12_192_cosine_router_8expert_8gpu_22k
+  NAME: swin_moe_base_patch4_window12_192_cosine_router_32expert_32gpu_22k
   DROP_PATH_RATE: 0.3
   SWIN_MOE:
     EMBED_DIM: 128
@@ -21,14 +21,12 @@ MODEL:
     MOE_DROP: 0.1
     AUX_LOSS_WEIGHT: 0.01
 TRAIN:
-  EPOCHS: 10
-  WARMUP_EPOCHS: 2
+  EPOCHS: 90
+  WARMUP_EPOCHS: 10
   WEIGHT_DECAY: 0.1
   BASE_LR: 1.25e-4 # 4096 batch-size
   WARMUP_LR: 1.25e-7
   MIN_LR: 1.25e-6
   CLIP_GRAD: 3.0
-  STEPS_T: 100
-  STEPS_V: 10
 TEST:
   SHUFFLE: True
