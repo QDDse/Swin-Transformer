@@ -27,7 +27,7 @@ TRAIN:
   WARMUP_LR: 1.25e-7
   MIN_LR: 1.25e-6
   CLIP_GRAD: 3.0
-  STEPS_T: 50  # train_steps per epoch
-  STEPS_V: 10   # val_steps per epoch
+  STEPS_T: 20  # train_steps per epoch
+  STEPS_V: 2   # val_steps per epoch
 TEST:
   SHUFFLE: True
