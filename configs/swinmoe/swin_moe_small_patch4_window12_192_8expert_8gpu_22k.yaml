@@ -20,14 +20,14 @@ MODEL:
     MOE_DROP: 0.1
     AUX_LOSS_WEIGHT: 0.01
 TRAIN:
-  EPOCHS: 10
-  WARMUP_EPOCHS: 2  # 10 
+  EPOCHS: 1
+  WARMUP_EPOCHS: 0  # 10 
   WEIGHT_DECAY: 0.1
   BASE_LR: 1.25e-4 # 4096 batch-size
   WARMUP_LR: 1.25e-7
   MIN_LR: 1.25e-6
   CLIP_GRAD: 3.0
-  STEPS_T: 10  # train_steps per epoch
-  STEPS_V: 2   # val_steps per epoch
+  STEPS_T: 50  # train_steps per epoch
+  STEPS_V: 10   # val_steps per epoch
 TEST:
   SHUFFLE: True
