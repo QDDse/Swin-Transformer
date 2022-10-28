@@ -333,11 +333,14 @@ class SwinTransformerBlock(nn.Module):
         mlp_hidden_dim = int(dim * mlp_ratio) ## hiddensize = dim(inpiut) * mlp_ratio
         
         ## 新建一个Mlp
+        
         self.Mlp = Mlp(in_features=self.dim, hidden_features=mlp_hidden_dim, out_features=self.dim)
         ## 只是对MLP扩展为MoE_MLP
         if self.is_moe:
             ## Deepspeed
             self.mlp = MoE(hidden_size=mlp_hidden_dim, expert=self.Mlp, num_experts=dist.get_world_size(), ep_size=dist.get_world_size(), k=self.top_value)
+            ### zihao-> 打印mlp_moe 信息
+            print(self.mlp)
         
             # self.mlp = (in_features=dim,
             #                   hidden_features=mlp_hidden_dim,
