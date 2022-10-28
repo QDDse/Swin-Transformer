@@ -4,9 +4,9 @@ DATA:
 MODEL:
   TYPE: swin_moe
   NAME: swin_moe_small_patch4_window12_192_8expert_8gpu_22k
-  DROP_PATH_RATE: 0.2
+  DROP_PATH_RATE: 0.2 # decrease
   SWIN_MOE:
-    EMBED_DIM: 96
+    EMBED_DIM: 96    # decrease
     DEPTHS: [ 2, 2, 18, 2 ]
     NUM_HEADS: [ 3, 6, 12, 24 ]
     WINDOW_SIZE: 12

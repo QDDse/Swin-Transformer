@@ -1,8 +1,6 @@
 # --------------------------------------------------------
 # Swin Transformer MoE
-# Copyright (c) 2022 Microsoft
-# Licensed under The MIT License [see LICENSE for details]
-# Written by Ze Liu
+# 用于deepspeed _Swin-moe
 # --------------------------------------------------------
 
 import torch
@@ -12,12 +10,19 @@ import torch.distributed as dist
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 import numpy as np
+try:
+    import deepspeed
+    import deepspeed.utils.groups as groups
+    from deepspeed.moe.layer import MoE
+except:
+    print('DeepSpeed has not been installed. To use Swin-MoE_deepspeed.')
 
 try:
     from tutel import moe as tutel_moe
 except:
     tutel_moe = None
     print("Tutel has not been installed. To use Swin-MoE, please install Tutel; otherwise, just ignore this.")
+
 
 
 class Mlp(nn.Module):
@@ -68,7 +73,7 @@ class MoEMlp(nn.Module):
         if cosine_router:
             _gate_type['proj_dim'] = cosine_router_dim
             _gate_type['init_t'] = cosine_router_init_t
-        ## tutel moe
+        ## deepspeed moe
         self._moe_layer = tutel_moe.moe_layer(
             gate_type=_gate_type,
             model_dim=in_features,
@@ -326,30 +331,33 @@ class SwinTransformerBlock(nn.Module):
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio) ## hiddensize = dim(inpiut) * mlp_ratio
-
+        
+        ## 新建一个Mlp
+        self.Mlp = Mlp(in_features=self.dim, hidden_features=mlp_hidden_dim, out_features=self.dim)
         ## 只是对MLP扩展为MoE_MLP
         if self.is_moe:
-            ## Tutel_moe
-            self.mlp = MoEMlp(in_features=dim,
-                              hidden_features=mlp_hidden_dim,
-                              num_local_experts=num_local_experts,
-                              top_value=top_value,
-                              capacity_factor=capacity_factor,
-                              cosine_router=cosine_router,
-                              normalize_gate=normalize_gate,
-                              use_bpr=use_bpr,  # Batch Priority Routing
-                              is_gshard_loss=is_gshard_loss,
-                              gate_noise=gate_noise,
-                              cosine_router_dim=cosine_router_dim,
-                              cosine_router_init_t=cosine_router_init_t,
-                              moe_drop=moe_drop,
-                              mlp_fc2_bias=mlp_fc2_bias,
-                              init_std=init_std)
+            ## Deepspeed
+            self.mlp = MoE(hidden_size=mlp_hidden_dim, expert=self.Mlp, num_experts=dist.get_world_size(), ep_size=dist.get_world_size(), k=self.top_value)
+        
+            # self.mlp = (in_features=dim,
+            #                   hidden_features=mlp_hidden_dim,
+            #                   num_local_experts=num_local_experts,
+            #                   top_value=top_value,
+            #                   capacity_factor=capacity_factor,
+            #                   cosine_router=cosine_router,
+            #                   normalize_gate=normalize_gate,
+            #                   use_bpr=use_bpr,  # Batch Priority Routing
+            #                   is_gshard_loss=is_gshard_loss,
+            #                   gate_noise=gate_noise,
+            #                   cosine_router_dim=cosine_router_dim,
+            #                   cosine_router_init_t=cosine_router_init_t,
+            #                   moe_drop=moe_drop,
+            #                   mlp_fc2_bias=mlp_fc2_bias,
+            #                   init_std=init_std)
         else:
             self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop,
                            mlp_fc2_bias=mlp_fc2_bias)
-        ## \
-         
+    
         if self.shift_size > 0:
             # calculate attention mask for SW-MSA
             H, W = self.input_resolution
