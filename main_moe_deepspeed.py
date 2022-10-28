@@ -91,7 +91,7 @@ def main(config):
         label_smoothing=config.MODEL.LABEL_SMOOTHING, num_classes=config.MODEL.NUM_CLASSES)
 
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
-    model = build_model(config)
+    model = build_model_deepspeed(config)
     logger.info(str(model))
 
     # For Tutel MoE
