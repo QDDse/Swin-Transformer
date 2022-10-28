@@ -13,7 +13,7 @@ import numpy as np
 try:
     import deepspeed
     import deepspeed.utils.groups as groups
-    from deepspeed.moe.layer import MoE
+    from deepspeed.moe.layer import MoE  ## MoE
 except:
     print('DeepSpeed has not been installed. To use Swin-MoE_deepspeed.')
 
@@ -340,7 +340,7 @@ class SwinTransformerBlock(nn.Module):
             ## Deepspeed
             self.mlp = MoE(hidden_size=self.dim, expert=self.Mlp, num_experts=dist.get_world_size(), ep_size=dist.get_world_size(), k=self.top_value)
             ### zihao-> 打印mlp_moe 信息
-            print(self.mlp)
+            print('=====================打印mlp_moe info============={}'.format(self.mlp))
         
             # self.mlp = (in_features=dim,
             #                   hidden_features=mlp_hidden_dim,
