@@ -338,7 +338,7 @@ class SwinTransformerBlock(nn.Module):
         ## 只是对MLP扩展为MoE_MLP
         if self.is_moe:
             ## Deepspeed
-            self.mlp = MoE(hidden_size=mlp_hidden_dim, expert=self.Mlp, num_experts=dist.get_world_size(), ep_size=dist.get_world_size(), k=self.top_value)
+            self.mlp = MoE(hidden_size=self.dim, expert=self.Mlp, num_experts=dist.get_world_size(), ep_size=dist.get_world_size(), k=self.top_value)
             ### zihao-> 打印mlp_moe 信息
             print(self.mlp)
         
