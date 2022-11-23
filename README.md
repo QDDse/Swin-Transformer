@@ -6,9 +6,9 @@
 - 运行fairscale-MoE: `bash run_fairscale.sh`
 ## TODO list
 - [X] 将tutel 接口改为fairscale
-- [] tutel-swin-moe在imagenet1K的5-shot accu, ft accu
-- [] fairscale-swin-moe 在imagenet1K的5-shot accu, ft accu
-- [] 将swin-moe移植至DTU pove实现
+- [ ] tutel-swin-moe在imagenet1K的5-shot accu, ft accu
+- [ ] fairscale-swin-moe 在imagenet1K的5-shot accu, ft accu
+- [ ] 将swin-moe移植至DTU pove实现
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/swin-transformer-v2-scaling-up-capacity-and/object-detection-on-coco)](https://paperswithcode.com/sota/object-detection-on-coco?p=swin-transformer-v2-scaling-up-capacity-and)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/swin-transformer-v2-scaling-up-capacity-and/instance-segmentation-on-coco)](https://paperswithcode.com/sota/instance-segmentation-on-coco?p=swin-transformer-v2-scaling-up-capacity-and)
