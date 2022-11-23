@@ -1,4 +1,9 @@
 # Swin Transformer
+## Swin-MoE using tutel & fairscale
+> 用到的fairscale -- version：v0.4.6
+- 安装依赖： `bash requirements.sh`
+- 运行tutel—MoE：`bash run_tutel.sh`
+- 运行fairscale-MoE: `bash run_fairscale.sh`
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/swin-transformer-v2-scaling-up-capacity-and/object-detection-on-coco)](https://paperswithcode.com/sota/object-detection-on-coco?p=swin-transformer-v2-scaling-up-capacity-and)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/swin-transformer-v2-scaling-up-capacity-and/instance-segmentation-on-coco)](https://paperswithcode.com/sota/instance-segmentation-on-coco?p=swin-transformer-v2-scaling-up-capacity-and)
