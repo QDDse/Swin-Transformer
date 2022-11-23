@@ -1,0 +1,1 @@
+python -m torch.distributed.launch --nproc_per_node 8 --nnode=1 --node_rank=0 --master_addr=127.0.0.1 --master_port 12345 main_moe.py --cfg configs/swinmoe/swin_moe_small_patch4_window12_192_8expert_8gpu_22k.yaml --batch-size 64 --tag tutel &> logs/swin-small_tutel-moe.log
