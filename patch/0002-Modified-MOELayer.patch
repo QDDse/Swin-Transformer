@@ -1,0 +1,40 @@
+From 478847807db6140737b09c905090177ce10a485a Mon Sep 17 00:00:00 2001
+From: QDDse <XJTU3121358312@163.com>
+Date: Wed, 23 Nov 2022 06:50:50 +0000
+Subject: [PATCH 2/2] Modified MOELayer
+
+---
+ .ipynb_checkpoints/patch-checkpoint | 10 ++++++++++
+ fairscale/nn/moe/moe_layer.py       |  2 +-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+ create mode 100644 .ipynb_checkpoints/patch-checkpoint
+
+diff --git a/.ipynb_checkpoints/patch-checkpoint b/.ipynb_checkpoints/patch-checkpoint
+new file mode 100644
+index 0000000..97d1f12
+--- /dev/null
++++ b/.ipynb_checkpoints/patch-checkpoint
+@@ -0,0 +1,10 @@
++diff --git a/fairscale/nn/moe/moe_layer.py b/fairscale/nn/moe/moe_layer.py
++index 8ae55dc..7229936 100644
++--- a/fairscale/nn/moe/moe_layer.py
+++++ b/fairscale/nn/moe/moe_layer.py
++@@ -88,4 +88,4 @@ class MOELayer(Base):
++         # Re-shape back: gecm -> ecm
++         expert_output = expert_output.reshape(self.world_size * self.num_local_experts, -1, d_model)
++         combined_output = torch.einsum("sec,ecm->sm", combine_weights, expert_output)
++-        return combined_output.reshape(input[0].shape)
+++        return combined_output.reshape(input[0].shape), self.l_aux
+diff --git a/fairscale/nn/moe/moe_layer.py b/fairscale/nn/moe/moe_layer.py
+index 8ae55dc..7229936 100644
+--- a/fairscale/nn/moe/moe_layer.py
++++ b/fairscale/nn/moe/moe_layer.py
+@@ -88,4 +88,4 @@ class MOELayer(Base):
+         # Re-shape back: gecm -> ecm
+         expert_output = expert_output.reshape(self.world_size * self.num_local_experts, -1, d_model)
+         combined_output = torch.einsum("sec,ecm->sm", combine_weights, expert_output)
+-        return combined_output.reshape(input[0].shape)
++        return combined_output.reshape(input[0].shape), self.l_aux
+-- 
+2.17.1
+
