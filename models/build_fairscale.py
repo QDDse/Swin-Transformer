@@ -8,11 +8,12 @@ import sys
 sys.path.append('./models/')
 from swin_transformer import SwinTransformer
 from swin_transformer_v2 import SwinTransformerV2
-from swin_transformer_moe_deepspeed import SwinTransformerMoE
+# from swin_transformer_moe_deepspeed import SwinTransformerMoE
+from swin_transformer_moe_fairscale import SwinTransformerMoE
 from swin_mlp import SwinMLP
 
 
-def build_model_deepspeed(config):
+def build_model_fairscale(config):
     '''
     Params：
         MODEL.TYPE: 

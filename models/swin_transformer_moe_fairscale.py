@@ -1,9 +1,11 @@
 # --------------------------------------------------------
-# Swin Transformer MoE
+# Swin Transformer MoE - Fairscale
 # Copyright (c) 2022 Microsoft
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ze Liu
 # --------------------------------------------------------
+import sys
+sys.path.append('../fairscale/')
 
 import torch
 import torch.nn as nn
@@ -13,11 +15,23 @@ import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 import numpy as np
 
+## fairscale
 try:
-    from tutel import moe as tutel_moe
+    from fairscale.nn import MOELayer, Top2Gate
+    import fairscale
+    print('$$$$$$$$$$$$$$$$$$$$fairscale_path:{}$$$$$$$$$$$$$$$$$$$$$'.format(fairscale.__path__))
 except:
-    tutel_moe = None
-    print("Tutel has not been installed. To use Swin-MoE, please install Tutel; otherwise, just ignore this.")
+    MOELayer = None
+    Top2Gate = None
+    print("Fairscale has not been installed. To use Swin-MoE, please install fair; otherwise, just ignore this.")
+    
+import torch.multiprocessing as mp
+# from fairscale.fair_dev.testing.testing import make_cudnn_deterministic
+# from fairscale.internal import torch_version
+import functools
+import tempfile
+import pytest
+
 
 
 class Mlp(nn.Module):
@@ -31,6 +45,13 @@ class Mlp(nn.Module):
         self.fc2 = nn.Linear(hidden_features, out_features, bias=mlp_fc2_bias)
         self.drop = nn.Dropout(drop)
         
+#         fc1 = torch.empty()
+        
+#         self.register_parameter(name='batched_fc1_w', param=torch.nn.Parameter(self.fc1.weight))
+#         self.register_parameter(name='batched_fc2_w', param=torch.nn.Parameter(self.fc2.weight))
+#         self.register_parameter(name='batched_fc1_bias', param=torch.nn.Parameter(self.fc1.bias))
+#         self.register_parameter(name='batched_fc2_bias', param=torch.nn.Parameter(self.fc2.bias))
+
     def forward(self, x):
         x = self.fc1(x)
         x = self.act(x)
@@ -59,7 +80,7 @@ class MoEMlp(nn.Module):
         self.mlp_fc2_bias = mlp_fc2_bias
 
         self.dist_rank = dist.get_rank()
-
+        self.moe_drop = moe_drop
         self._dropout = nn.Dropout(p=moe_drop)
 
         _gate_type = {'type': 'cosine_top' if cosine_router else 'top',
@@ -68,39 +89,63 @@ class MoEMlp(nn.Module):
         if cosine_router:
             _gate_type['proj_dim'] = cosine_router_dim
             _gate_type['init_t'] = cosine_router_init_t
-        ## tutel moe
-        self._moe_layer = tutel_moe.moe_layer(
-            gate_type=_gate_type,
-            model_dim=in_features,
-            experts={'type': 'ffn', 'count_per_node': num_local_experts, 'hidden_size_per_expert': hidden_features,
-                     'activation_fn': lambda x: self._dropout(F.gelu(x))},
-            scan_expert_func=lambda name, param: setattr(param, 'skip_allreduce', True),
-            seeds=(1, self.dist_rank + 1, self.dist_rank + 1),
-            batch_prioritized_routing=use_bpr,
-            normalize_gate=normalize_gate,
-            is_gshard_loss=is_gshard_loss,
-
+        # ## tutel moe
+        # self._moe_layer = tutel_moe.moe_layer(
+        #     gate_type=_gate_type,
+        #     model_dim=in_features,
+        #     experts={'type': 'ffn', 'count_per_node': num_local_experts, 'hidden_size_per_expert': hidden_features,
+        #              'activation_fn': lambda x: self._dropout(F.gelu(x))},
+        #     scan_expert_func=lambda name, param: setattr(param, 'skip_allreduce', True),
+        #     seeds=(1, self.dist_rank + 1, self.dist_rank + 1),
+        #     batch_prioritized_routing=use_bpr,
+        #     normalize_gate=normalize_gate,
+        #     is_gshard_loss=is_gshard_loss,
+        # )
+        
+        ## ===== fairscale moe ========
+        self.expert = Mlp(
+            in_features=self.in_features,
+            hidden_features=self.hidden_features,
+            out_features=self.in_features,
+            drop=self.moe_drop,
+            mlp_fc2_bias=self.mlp_fc2_bias
         )
+        
+        self.global_experts = num_local_experts * dist.get_world_size() if num_local_experts > 0 \
+            else dist.get_world_size() // (-num_local_experts) 
+        
+        gate = Top2Gate(
+            self.in_features,
+            self.global_experts
+        )
+            
+        self._moe_layer = MOELayer(gate, self.expert)
+            
+        # print('===================experts:{}================='.format(self._moe_layer.experts[0].fc1.weight.shape))
+        
         if not self.mlp_fc2_bias:
-            self._moe_layer.experts.batched_fc2_bias.requires_grad = False
+            self._moe_layer.experts[0].fc2.weight.requires_grad = False
 
     def forward(self, x):
-        x = self._moe_layer(x)
-        return x, x.l_aux
+        x, l_aux = self._moe_layer(x)
+        # print('####################l_aux:{}######################'.format(l_aux))
+        return x, l_aux
 
     def extra_repr(self) -> str:
         return f'[Statistics-{self.dist_rank}] param count for MoE, ' \
                f'in_features = {self.in_features}, hidden_features = {self.hidden_features}, ' \
                f'num_local_experts = {self.num_local_experts}, top_value = {self.top_value}, ' \
                f'cosine_router={self.cosine_router} normalize_gate={self.normalize_gate}, use_bpr = {self.use_bpr}'
-    
+
     ## 初始时参数
     def _init_weights(self):
         if hasattr(self._moe_layer, "experts"):
-            trunc_normal_(self._moe_layer.experts.batched_fc1_w, std=self.init_std)
-            trunc_normal_(self._moe_layer.experts.batched_fc2_w, std=self.init_std)
-            nn.init.constant_(self._moe_layer.experts.batched_fc1_bias, 0)
-            nn.init.constant_(self._moe_layer.experts.batched_fc2_bias, 0)
+            trunc_normal_(self._moe_layer.experts[0].fc1.weight, std=self.init_std)
+            trunc_normal_(self._moe_layer.experts[0].fc2.weight, std=self.init_std)
+            nn.init.constant_(self._moe_layer.experts[0].fc1.bias, 0)
+            ## fc2.bias True/False
+            if self.mlp_fc2_bias:
+                nn.init.constant_(self._moe_layer.experts[0].fc2.bias, 0)
 
 
 def window_partition(x, window_size):
@@ -416,8 +461,9 @@ class SwinTransformerBlock(nn.Module):
         ## FFN_MoE
         if self.is_moe:
             x, l_aux = self.mlp(x)
+            # x = self.mlp(x)
             x = shortcut + self.drop_path(x)
-            return x, l_aux
+            return x
         else:
             x = shortcut + self.drop_path(self.mlp(x))
             return x

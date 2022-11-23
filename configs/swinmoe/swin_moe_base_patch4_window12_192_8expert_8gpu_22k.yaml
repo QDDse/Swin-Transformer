@@ -1,6 +1,7 @@
 DATA:
   DATASET: imagenet22K
   IMG_SIZE: 192
+  BATCH_SIZE: 8  ## default:128
 MODEL:
   TYPE: swin_moe
   NAME: swin_moe_base_patch4_window12_192_8expert_8gpu_22k  # 8 experts

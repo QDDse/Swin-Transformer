@@ -1,12 +1,12 @@
 # --------------------------------------------------------
 # Swin Transformer
-# Swin-moe_deepspeed
+# build_model_fairscale
 # Written by Ze Liu
 # --------------------------------------------------------
 import sys
 sys.path.append('./models/')
 
-from tutel import system
+# from tutel import system
 
 import os
 import time
@@ -25,7 +25,8 @@ from timm.utils import accuracy, AverageMeter
 from timm.data import Mixup
 from config import get_config
 # from models import build_model
-from build_deepspeed import build_model_deepspeed
+from build_fairscale import build_model_fairscale  ## fairscale
+
 from data import build_loader
 from lr_scheduler import build_scheduler
 from optimizer import build_optimizer
@@ -91,7 +92,7 @@ def main(config):
         label_smoothing=config.MODEL.LABEL_SMOOTHING, num_classes=config.MODEL.NUM_CLASSES)
 
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
-    model = build_model_deepspeed(config)
+    model = build_model_fairscale(config)
     logger.info(str(model))
 
     # For Tutel MoE
@@ -167,7 +168,7 @@ def main(config):
 
     if config.THROUGHPUT_MODE:
         # throughput(data_loader_val, model, logger)
-        throughput_fake(model, logger)
+        throughput(model, logger)
         return
 
     logger.info("Start training")
@@ -320,12 +321,12 @@ def throughput(data_loader, model, logger):
     for idx, (images, _) in enumerate(data_loader):
         images = images.cuda(non_blocking=True)
         batch_size = images.shape[0]
-        for i in range(50):
+        for i in range(config.TRAIN.STEPS_T):
             model(images)
         torch.cuda.synchronize()
         logger.info(f"throughput averaged with 30 times")
         tic1 = time.time()
-        for i in range(30):
+        for i in range(config.TRAIN.STEPS_V):
             model(images)
         torch.cuda.synchronize()
         tic2 = time.time()
@@ -342,12 +343,12 @@ def throughput_fake(model, logger):
         images = torch.randn(config.DATA.BATCH_SIZE, 3,192,192)
         images = images.cuda(non_blocking=True)
         batch_size = images.shape[0]
-        for i in range(50):
+        for i in range(config.TRAIN.STEPS_T):
             model(images)
         torch.cuda.synchronize()
-        logger.info(f"throughput averaged with 30 times")
+        logger.info(f"throughput avera1ged with 30 times")
         tic1 = time.time()
-        for i in range(30):
+        for i in range(config.TRAIN.STEPS_V):
             model(images)
         torch.cuda.synchronize()
         tic2 = time.time()
@@ -371,6 +372,8 @@ def train_one_epoch_fake(config, model, criterion, optimizer, epoch, mixup_fn, l
 
     start = time.time()
     end = time.time()
+    print("***********************BATCH_SIZE:{}********************".format(config.DATA.BATCH_SIZE))
+    
     for idx in range(num_steps):
         samples = torch.randn(config.DATA.BATCH_SIZE, 3,192,192)
         targets = torch.ones(config.DATA.BATCH_SIZE)

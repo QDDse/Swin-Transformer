@@ -38,7 +38,8 @@ try:
 
     timm_transforms._pil_interp = _pil_interp
 except:
-    from timm.data.transforms import _pil_interp
+    # from timm.data.transforms import _pil_interp
+    from timm.data.transforms import str_to_pil_interp
 
 
 def build_loader(config):
