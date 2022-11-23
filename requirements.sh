@@ -1,9 +1,11 @@
 # pip install fairscale
 git clone https://github.com/facebookresearch/fairscale.git
 cd fairscale 
-git tag 0.4.6
-git am --abort
-git am --signoff < ../patch/*.patch
+git checkout v0.4.6
+# git am --abort
+git am --signoff < ../patch/0002-Modified-MOELayer.patch
+# git am --signoff < ../patch/0001-0.4.6-release.patch
+
 pip install timm
 
 pip install yacs

@@ -1,8 +1,9 @@
 # Lint as: python3
 """Utility to find k-shot dataset indices, outputs the indices on stdout."""
 #!/usr/bin/env python3
-# coding: utf-8
-# from https://github.com/google-research/big_transfer/blob/master/bit_pytorch/fewshot.py
+## coding: utf-8
+
+##  from https://github.com/google-research/big_transfer/blob/master/bit_pytorch/fewshot.py
 
 from collections import *
 from functools import *
